@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseNumber, brl, pct, money } from './format.js';
+import { parseNumber, brl, pct, money, amount, maskCents } from './format.js';
 
 describe('parseNumber (pt-BR)', () => {
   it('interpreta ponto como separador de milhar', () => {
@@ -43,6 +43,32 @@ describe('pct', () => {
     expect(pct(0.28)).toBe('28.0%');
     expect(pct(0.281)).toBe('28.1%');
     expect(pct(0)).toBe('0.0%');
+  });
+});
+
+describe('amount', () => {
+  it('formata número com milhar e 2 casas, sem símbolo', () => {
+    expect(amount(1000)).toBe('1.000,00');
+    expect(amount(1234.56)).toBe('1.234,56');
+    expect(amount(0)).toBe('0,00');
+  });
+  it('aceita string pt-BR e lixo', () => {
+    expect(amount('5000')).toBe('5.000,00');
+    expect(amount('1.234,56')).toBe('1.234,56');
+    expect(amount('lixo')).toBe('0,00');
+  });
+});
+
+describe('maskCents', () => {
+  it('trata os dígitos como centavos', () => {
+    expect(maskCents('50')).toBe('0,50');
+    expect(maskCents('300000')).toBe('3.000,00');
+    expect(maskCents('1234567')).toBe('12.345,67');
+  });
+  it('ignora não-dígitos e trata vazio como 0,00', () => {
+    expect(maskCents('R$ 1.234,56')).toBe('1.234,56');
+    expect(maskCents('')).toBe('0,00');
+    expect(maskCents('0')).toBe('0,00');
   });
 });
 
