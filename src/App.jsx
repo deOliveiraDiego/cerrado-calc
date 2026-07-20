@@ -7,7 +7,10 @@ import { brl, pct, parseNumber } from './lib/format.js';
 const ICONS = { shield: Shield, trending: TrendingUp, bitcoin: Bitcoin };
 const STATUS_LABEL = { acima: 'acima', abaixo: 'abaixo', ok: 'no alvo' };
 
-const num = (e) => parseNumber(e.target.value);
+// Mantém no estado o texto que o usuário digitou (só removendo caracteres
+// inválidos), para não engolir a vírgula/ponto enquanto ele digita centavos.
+// A conversão para número acontece só na hora do cálculo, via parseNumber.
+const cleanNum = (v) => String(v).replace(/[^\d.,]/g, '');
 
 const initialHoldings = Object.fromEntries(ASSETS.map((a) => [a.name, 0]));
 const initialTargets = Object.fromEntries(ASSETS.map((a) => [a.name, a.defaultTarget]));
@@ -18,10 +21,14 @@ export default function App() {
   const [targets, setTargets] = usePersistentState('cerrado.targets', initialTargets);
   const [aporte, setAporte] = usePersistentState('cerrado.aporte', 3000);
 
-  const rows = computeDistribution(holdings, targets, aporte);
+  const holdingsNum = Object.fromEntries(ASSETS.map((a) => [a.name, parseNumber(holdings[a.name])]));
+  const targetsNum = Object.fromEntries(ASSETS.map((a) => [a.name, parseNumber(targets[a.name])]));
+  const aporteNum = parseNumber(aporte);
+
+  const rows = computeDistribution(holdingsNum, targetsNum, aporteNum);
   const byName = Object.fromEntries(rows.map((r) => [r.name, r]));
-  const somaAlvos = ASSETS.reduce((a, x) => a + (Number(targets[x.name]) || 0), 0);
-  const totalAtual = ASSETS.reduce((a, x) => a + (Number(holdings[x.name]) || 0), 0);
+  const somaAlvos = ASSETS.reduce((a, x) => a + parseNumber(targets[x.name]), 0);
+  const totalAtual = ASSETS.reduce((a, x) => a + parseNumber(holdings[x.name]), 0);
   const totalAportar = rows.reduce((a, r) => a + r.aportar, 0);
 
   return (
@@ -51,11 +58,11 @@ export default function App() {
                 type="text"
                 inputMode="decimal"
                 value={aporte}
-                onChange={(e) => setAporte(num(e))}
+                onChange={(e) => setAporte(cleanNum(e.target.value))}
                 className="w-full pl-12 pr-4 py-4 text-2xl font-bold text-center border-2 border-purple-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-400"
               />
             </div>
-            <div className="mt-2 text-center text-gray-600 font-semibold">{brl(aporte)}</div>
+            <div className="mt-2 text-center text-gray-600 font-semibold">{brl(aporteNum)}</div>
           </div>
 
           <div className="flex flex-wrap justify-center gap-3 mb-6">
@@ -101,13 +108,13 @@ export default function App() {
 
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <label className="text-sm text-gray-600">
-                      Valor atual (R$)
+                      Quanto você tem (R$)
                       <input
-                        aria-label={`Valor atual ${asset.name}`}
+                        aria-label={`Quanto você tem ${asset.name}`}
                         type="text"
                         inputMode="decimal"
                         value={holdings[asset.name]}
-                        onChange={(e) => setHoldings({ ...holdings, [asset.name]: num(e) })}
+                        onChange={(e) => setHoldings({ ...holdings, [asset.name]: cleanNum(e.target.value) })}
                         className="mt-1 w-full px-3 py-2 border rounded-lg"
                       />
                     </label>
@@ -118,7 +125,7 @@ export default function App() {
                         type="text"
                         inputMode="decimal"
                         value={targets[asset.name]}
-                        onChange={(e) => setTargets({ ...targets, [asset.name]: num(e) })}
+                        onChange={(e) => setTargets({ ...targets, [asset.name]: cleanNum(e.target.value) })}
                         className="mt-1 w-full px-3 py-2 border rounded-lg"
                       />
                     </label>
@@ -145,7 +152,7 @@ export default function App() {
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 flex flex-col sm:flex-row justify-between gap-2 text-gray-700 font-semibold">
             <span>Patrimônio atual: {brl(totalAtual)}</span>
             <span>Total a aportar: {brl(totalAportar)}</span>
-            <span>Após aporte: {brl(totalAtual + (Number(aporte) || 0))}</span>
+            <span>Após aporte: {brl(totalAtual + aporteNum)}</span>
           </div>
         </div>
       </div>

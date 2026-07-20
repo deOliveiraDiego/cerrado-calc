@@ -14,7 +14,7 @@ describe('App', () => {
 
   it('não aporta em ativo muito acima do alvo', () => {
     render(<App />);
-    fireEvent.change(screen.getByLabelText('Valor atual Bitcoin'), { target: { value: '10000' } });
+    fireEvent.change(screen.getByLabelText('Quanto você tem Bitcoin'), { target: { value: '10000' } });
     fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '1000' } });
     // O card do Bitcoin exibe status 'acima'
     expect(screen.getByText(/\(acima\)/)).toBeInTheDocument();
@@ -29,13 +29,13 @@ describe('App', () => {
   it('usa inputmode decimal nos campos numéricos', () => {
     render(<App />);
     expect(screen.getByLabelText('Aporte deste mês')).toHaveAttribute('inputmode', 'decimal');
-    expect(screen.getByLabelText('Valor atual AUPO11')).toHaveAttribute('inputmode', 'decimal');
+    expect(screen.getByLabelText('Quanto você tem AUPO11')).toHaveAttribute('inputmode', 'decimal');
     expect(screen.getByLabelText('Alvo AUPO11')).toHaveAttribute('inputmode', 'decimal');
   });
 
   it('interpreta valores com separador de milhar corretamente', () => {
     render(<App />);
-    fireEvent.change(screen.getByLabelText('Valor atual Bitcoin'), { target: { value: '10.000' } });
+    fireEvent.change(screen.getByLabelText('Quanto você tem Bitcoin'), { target: { value: '10.000' } });
     fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '1.000' } });
     // 10.000 = dez mil (não 1); Bitcoin fica acima do alvo
     expect(screen.getByText(/\(acima\)/)).toBeInTheDocument();
@@ -53,10 +53,20 @@ describe('App', () => {
 
   it('zera a carteira', () => {
     render(<App />);
-    fireEvent.change(screen.getByLabelText('Valor atual Bitcoin'), { target: { value: '10000' } });
-    expect(screen.getByLabelText('Valor atual Bitcoin')).toHaveValue('10000');
+    fireEvent.change(screen.getByLabelText('Quanto você tem Bitcoin'), { target: { value: '10000' } });
+    expect(screen.getByLabelText('Quanto você tem Bitcoin')).toHaveValue('10000');
     fireEvent.click(screen.getByText('Zerar carteira'));
-    expect(screen.getByLabelText('Valor atual Bitcoin')).toHaveValue('0');
+    expect(screen.getByLabelText('Quanto você tem Bitcoin')).toHaveValue('0');
+  });
+
+  it('permite digitar centavos com vírgula sem engolir o separador', () => {
+    render(<App />);
+    const inp = screen.getByLabelText('Quanto você tem AUPO11');
+    fireEvent.change(inp, { target: { value: '1234,56' } });
+    expect(inp).toHaveValue('1234,56');
+    // e o cálculo interpreta como 1.234,56
+    fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '0' } });
+    expect(screen.getByText(/Patrimônio atual:\s*R\$\s*1\.234,56/)).toBeInTheDocument();
   });
 
   it('mostra o total a aportar igual ao aporte', () => {
