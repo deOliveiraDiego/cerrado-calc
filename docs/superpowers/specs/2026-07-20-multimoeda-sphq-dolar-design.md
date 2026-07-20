@@ -81,6 +81,19 @@ Isso mantém a lib pura testável e isola moeda como preocupação de apresenta�
 - `App` (integração): saldo do SPHQ em US$ com cotação fixa entra no patrimônio em R$ correto; card do SPHQ mostra aporte em US$ e R$; sem cotação, SPHQ mostra "—" e não quebra o resto.
 - `computeDistribution`: **inalterada** — nenhum teste tocado.
 
+## Princípios de UX (heurísticas de Nielsen aplicadas ao câmbio)
+
+Critérios de aceitação derivados de uma revisão pré-desenvolvimento, focados na superfície nova (barra de cotação, entrada em US$, exibição dupla, estados de erro):
+
+1. **Visibilidade do status** *(prioridade máxima)*: a barra sempre mostra a cotação em uso, sua **fonte** (`automático` / `em cache de {data}` / `manual`) e o horário; indicador de `loading` discreto durante a busca. Nunca uma cotação silenciosa/implícita.
+2. **Prevenção de erro** *(crítico)*: sem cotação válida, o SPHQ **nunca** é tratado como R$ 0 — sai da distribuição e mostra "—". Cotação 0/negativa/não-numérica é tratada como ausente (sem divisão por zero).
+3. **Recuperação de erro**: quando a API falha, banner acionável ("não consegui o dólar — digite a cotação") que aponta para o campo manual; distinção visual entre "em cache" (funciona, só está velho) e "sem cotação" (SPHQ bloqueado).
+4. **Controle e liberdade**: override manual + botão "voltar ao automático" + "atualizar" (refresh) — o usuário nunca fica preso a uma cotação errada.
+5. **Reconhecer, não lembrar**: o card do SPHQ exibe o `≈ R$ Y` ao lado do `US$ X`, para o usuário não precisar recordar a cotação nem fazer a conta.
+6. **Correspondência + consistência**: `US$` e `R$` sempre rotulados; mesma formatação via `money(v, currency)`; card do SPHQ com layout idêntico aos demais, mudando só a moeda.
+7. **Minimalismo**: a barra de cotação ocupa uma linha compacta, sem poluir o topo.
+8. **Eficiência + ajuda**: o cache faz o app abrir instantâneo; um micro-hint (tooltip) indica que o SPHQ é em dólar e a cotação é aproximada.
+
 ## Critérios de sucesso
 - O usuário digita o saldo do SPHQ em US$ e vê quanto aportar nele em US$ (e o equivalente em R$), sem converter nada de cabeça.
 - A cotação aparece automaticamente ao abrir, pode ser ajustada à mão e sobrevive a falhas da API via cache.
