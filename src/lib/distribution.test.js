@@ -57,4 +57,30 @@ describe('computeDistribution', () => {
     const r = computeDistribution(holdings, targets, 100);
     expect(r.find((x) => x.name === 'Bitcoin').status).toBe('acima');
   });
+
+  it('cada aporte é arredondado a centavos (2 casas)', () => {
+    const even = { A: 25, B: 25, C: 25, D: 25 };
+    const r = computeDistribution({ A: 0, B: 0, C: 0, D: 0 }, even, 1000);
+    for (const x of r) {
+      const cents = x.aportar * 100;
+      expect(Math.abs(cents - Math.round(cents))).toBeLessThan(1e-9);
+    }
+  });
+
+  it('a soma dos aportes bate EXATAMENTE com o aporte (sem sobra de centavo)', () => {
+    // 1000 / 3 = 333,333... exige ajuste da última fração
+    const even = { A: 25, B: 25, C: 25, D: 25 };
+    const holdings = { A: 0, B: 0, C: 0, D: 100000 }; // D muito acima -> recebe 0
+    const r = computeDistribution(holdings, even, 1000);
+    const soma = r.reduce((a, x) => a + x.aportar, 0);
+    expect(soma).toBe(1000);
+    expect(r.find((x) => x.name === 'D').aportar).toBe(0);
+  });
+
+  it('não cria centavos em ativos que deveriam receber 0', () => {
+    const holdings = { AUPO11: 280, AUVP11: 390, SPHQ: 190, Bitcoin: 300 };
+    const r = computeDistribution(holdings, targets, 100);
+    expect(r.find((x) => x.name === 'Bitcoin').aportar).toBe(0);
+    expect(r.reduce((a, x) => a + x.aportar, 0)).toBe(100);
+  });
 });
