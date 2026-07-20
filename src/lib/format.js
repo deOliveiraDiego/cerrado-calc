@@ -15,7 +15,9 @@ export function parseNumber(input) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export const brl = (v) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0);
+export const money = (value, currency = 'BRL') =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(Number(value) || 0);
+
+export const brl = (v) => money(v, 'BRL');
 
 export const pct = (f) => `${(f * 100).toFixed(1)}%`;

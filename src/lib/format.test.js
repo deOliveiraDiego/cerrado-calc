@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseNumber, brl, pct } from './format.js';
+import { parseNumber, brl, pct, money } from './format.js';
 
 describe('parseNumber (pt-BR)', () => {
   it('interpreta ponto como separador de milhar', () => {
@@ -43,5 +43,20 @@ describe('pct', () => {
     expect(pct(0.28)).toBe('28.0%');
     expect(pct(0.281)).toBe('28.1%');
     expect(pct(0)).toBe('0.0%');
+  });
+});
+
+describe('money', () => {
+  it('formata BRL com R$ e padrão pt-BR', () => {
+    expect(money(1000, 'BRL')).toContain('1.000,00');
+    expect(money(1000, 'BRL')).toContain('R$');
+  });
+  it('formata USD com US$ e padrão pt-BR', () => {
+    expect(money(1000, 'USD')).toContain('1.000,00');
+    expect(money(1000, 'USD')).toContain('US$');
+  });
+  it('assume BRL por padrão e trata lixo como 0', () => {
+    expect(money(1234.56)).toContain('1.234,56');
+    expect(money('lixo', 'USD')).toContain('0,00');
   });
 });
