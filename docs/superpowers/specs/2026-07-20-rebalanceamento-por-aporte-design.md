@@ -50,11 +50,10 @@ Passos:
 3. Para cada ativo: `ideal_i = novoTotal × alvo_i`
 4. `falta_i = max(0, ideal_i − atual_i)` (quanto falta pra chegar no ideal pós-aporte)
 5. `somaFaltas = Σ falta_i`
-6. Distribuição:
-   - Se `somaFaltas == 0` (nada abaixo do alvo — raro): distribui o aporte proporcional aos `alvo_i`.
-   - Se `aporte ≤ somaFaltas`: `aportar_i = aporte × (falta_i / somaFaltas)` (não dá pra zerar todas as defasagens este mês; prioriza proporcional à defasagem).
-   - Se `aporte > somaFaltas`: primeiro `aportar_i = falta_i` (cobre todas as defasagens), e o **excedente** (`aporte − somaFaltas`) é distribuído proporcional aos `alvo_i`.
-7. Ativos já acima do alvo recebem `aportar_i = 0` neste aporte.
+6. Distribuição: `aportar_i = aporte × (falta_i / somaFaltas)`.
+7. Ativos já acima do alvo têm `falta_i = 0`, logo recebem `aportar_i = 0` automaticamente.
+
+> **Nota matemática:** `somaFaltas ≥ aporte` sempre. Como `Σ(ideal_i − atual_i) = novoTotal − totalAtual = aporte` e cortar os termos negativos (ativos acima do alvo) só aumenta a soma, nunca sobra aporte depois de cobrir as defasagens. Por isso a distribuição é sempre proporcional à defasagem — não existe caso de "excedente". Guarda defensiva: se `aporte = 0` ou `somaFaltas = 0`, todos os `aportar_i = 0`.
 
 Saída por ativo: `aportar_i`, `%_antes = atual_i / totalAtual`, `%_depois = (atual_i + aportar_i) / novoTotal`, e flag `acima/abaixo/ok` vs alvo.
 
