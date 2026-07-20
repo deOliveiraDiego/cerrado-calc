@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { usePersistentState } from './usePersistentState.js';
+import { usePersistentState, isLocalStorageAvailable } from './usePersistentState.js';
 
 beforeEach(() => window.localStorage.clear());
+
+describe('isLocalStorageAvailable', () => {
+  it('retorna true quando o localStorage funciona (jsdom)', () => {
+    expect(isLocalStorageAvailable()).toBe(true);
+  });
+});
 
 describe('usePersistentState', () => {
   it('usa o valor inicial quando nada está salvo', () => {
