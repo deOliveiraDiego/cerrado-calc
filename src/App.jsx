@@ -4,7 +4,7 @@ import { ASSETS } from './assets.js';
 import { computeDistribution } from './lib/distribution.js';
 import { usePersistentState, isLocalStorageAvailable } from './hooks/usePersistentState.js';
 import { useExchangeRate } from './hooks/useExchangeRate.js';
-import { money, pct, parseNumber } from './lib/format.js';
+import { money, pct, parseNumber, amount, maskCents } from './lib/format.js';
 
 const ICONS = { shield: Shield, trending: TrendingUp, bitcoin: Bitcoin };
 const STATUS_LABEL = { acima: 'acima', abaixo: 'abaixo', ok: 'no alvo' };
@@ -48,9 +48,9 @@ export default function App() {
   const totalAportar = rows.reduce((a, r) => a + r.aportar, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-4 sm:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-6 sm:p-10">
+        <div className="bg-white rounded-3xl shadow-xl ring-1 ring-slate-200 p-6 sm:p-10">
           <div className="text-center mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">Calculadora do Cerrado</h1>
             <p className="text-gray-600">Aporte direcionado aos ativos abaixo do alvo — buy and hold, sem vender.</p>
@@ -73,7 +73,7 @@ export default function App() {
               <button type="button" aria-label="Atualizar cotação" onClick={refresh} className="text-gray-500 hover:text-gray-700">
                 <RefreshCw className="w-4 h-4" />
               </button>
-              <button type="button" onClick={() => setEditandoCotacao((v) => !v)} className="text-purple-700 underline">
+              <button type="button" onClick={() => setEditandoCotacao((v) => !v)} className="text-emerald-700 underline">
                 editar
               </button>
             </div>
@@ -91,7 +91,7 @@ export default function App() {
                   />
                 </label>
                 {manualRate !== '' && (
-                  <button type="button" onClick={() => setManualRate('')} className="text-purple-700 underline">
+                  <button type="button" onClick={() => setManualRate('')} className="text-emerald-700 underline">
                     voltar ao automático
                   </button>
                 )}
@@ -116,9 +116,9 @@ export default function App() {
                 aria-label="Aporte deste mês"
                 type="text"
                 inputMode="decimal"
-                value={aporte}
-                onChange={(e) => setAporte(cleanNum(e.target.value))}
-                className="w-full pl-12 pr-4 py-4 text-2xl font-bold text-center border-2 border-purple-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-400"
+                value={amount(aporte)}
+                onChange={(e) => setAporte(maskCents(e.target.value))}
+                className="w-full pl-12 pr-4 py-4 text-2xl font-bold text-center border-2 border-slate-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-300"
               />
             </div>
             <div className="mt-2 text-center text-gray-600 font-semibold">{money(aporteNum, 'BRL')}</div>
@@ -128,7 +128,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setTargets(initialTargets)}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-purple-700 bg-purple-100 hover:bg-purple-200 rounded-xl py-2 px-4 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-xl py-2 px-4 transition-colors"
             >
               <RotateCcw className="w-4 h-4" /> Restaurar alvos padrão
             </button>
@@ -180,8 +180,8 @@ export default function App() {
                         aria-label={`Quanto você tem ${asset.name}`}
                         type="text"
                         inputMode="decimal"
-                        value={holdings[asset.name]}
-                        onChange={(e) => setHoldings({ ...holdings, [asset.name]: cleanNum(e.target.value) })}
+                        value={amount(holdings[asset.name])}
+                        onChange={(e) => setHoldings({ ...holdings, [asset.name]: maskCents(e.target.value) })}
                         className="mt-1 w-full px-3 py-2 border rounded-lg"
                       />
                     </label>
@@ -240,7 +240,7 @@ export default function App() {
             })}
           </div>
 
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 flex flex-col sm:flex-row justify-between gap-2 text-gray-700 font-semibold">
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl p-6 flex flex-col sm:flex-row justify-between gap-2 text-gray-700 font-semibold">
             <span>Patrimônio atual: {money(totalAtual, 'BRL')}</span>
             <span>Total a aportar: {money(totalAportar, 'BRL')}</span>
             <span>Após aporte: {money(totalAtual + aporteNum, 'BRL')}</span>
