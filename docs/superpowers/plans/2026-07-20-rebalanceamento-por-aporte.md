@@ -80,6 +80,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
+  base: '/cerrado-calc/',
   plugins: [react(), tailwindcss()],
   test: {
     environment: 'jsdom',
@@ -88,6 +89,8 @@ export default defineConfig({
   },
 });
 ```
+
+> `base` deve casar com o nome do repositório no GitHub (`/cerrado-calc/`) para o app funcionar em `https://<usuario>.github.io/cerrado-calc/`.
 
 - [ ] **Step 3: Criar `index.html`, `src/index.css`, `src/test/setup.js`, `src/main.jsx`**
 
@@ -604,9 +607,90 @@ git commit -m "feat: UI de rebalanceamento por aporte com alvos editáveis e per
 
 ---
 
+### Task 5: Deploy estático no GitHub Pages
+
+**Files:**
+- Create: `.github/workflows/deploy.yml`, `public/.nojekyll`
+
+**Interfaces:**
+- Consumes: `npm run build` (Task 1) gerando `dist/` com `base: '/cerrado-calc/'`.
+- Produces: site publicado em `https://<usuario>.github.io/cerrado-calc/` a cada push na `main`.
+
+- [ ] **Step 1: Criar `public/.nojekyll`**
+
+Arquivo vazio (evita o Jekyll do Pages ignorar pastas iniciadas com `_`). O Vite copia `public/` para `dist/` no build.
+
+```bash
+mkdir -p public && touch public/.nojekyll
+```
+
+- [ ] **Step 2: Criar o workflow `.github/workflows/deploy.yml`**
+
+```yaml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+- [ ] **Step 3: Verificar o build com o `base` de produção**
+
+Run: `npm run build`
+Expected: build sem erro; conferir em `dist/index.html` que os assets referenciam `/cerrado-calc/assets/...`.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add .github/workflows/deploy.yml public/.nojekyll
+git commit -m "ci: deploy estático no GitHub Pages via Actions"
+```
+
+- [ ] **Step 5: Ativar o Pages no repositório (passo manual do Diego)**
+
+No GitHub: criar o repo `cerrado-calc`, dar `git push`, e em **Settings → Pages → Build and deployment → Source: GitHub Actions**. O primeiro push na `main` publica o site.
+
+---
+
 ## Notas de verificação (self-review)
 
-- **Cobertura do spec:** entradas de carteira + aporte (Task 4), alvos editáveis + aviso de soma (Task 4), algoritmo de defasagem (Task 2), saída com % antes/depois e status (Tasks 2+4), localStorage (Task 3), visual mantido (Task 4), carteira zerada = repartição por peso (teste na Task 2). ✔
+- **Cobertura do spec:** entradas de carteira + aporte (Task 4), alvos editáveis + aviso de soma (Task 4), algoritmo de defasagem (Task 2), saída com % antes/depois e status (Tasks 2+4), localStorage (Task 3), visual mantido (Task 4), carteira zerada = repartição por peso (teste na Task 2), deploy estático no GitHub Pages (Task 5). ✔
 - **Sem placeholders:** todos os steps têm código/comando reais. ✔
 - **Consistência de tipos:** `computeDistribution` retorna `{name, atual, aportar, pctAntes, pctDepois, alvo, status}`, consumido igual na `App`. `usePersistentState(key, initial)` usado 3x com a mesma assinatura. ✔
 - **Fora de escopo (fase 2):** sistema de notas que gera os alvos; venda de ativos; cotação em tempo real; adicionar/remover ativos pela UI.

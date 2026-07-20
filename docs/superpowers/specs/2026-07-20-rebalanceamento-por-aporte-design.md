@@ -74,7 +74,13 @@ Carteira R$ 10.000 com Bitcoin em 20% (acima dos 14%), aporte R$ 3.000. Bitcoin 
 - **UI**: reaproveita cards + tabela resumo do artefato atual, agora com inputs de valor atual e alvo editável, e colunas "aportar agora / % antes / % depois".
 
 ## Stack
-- React (single-file component, como o artefato atual), Tailwind, ícones lucide-react. Objetivo: continuar publicável como Artifact.
+- React 18 (JSX) + Vite, Tailwind v4, ícones lucide-react. App **100% estático e client-side** (sem backend/API/banco); estado de sessão em memória, persistência em localStorage.
+
+## Deploy / Hospedagem
+- **GitHub Pages**, servindo o build estático do Vite (`dist/`). Sem servidor, sem hospedagem paga.
+- Publicação automática via **GitHub Actions** a cada push na `main` (build → upload do artefato de Pages → deploy).
+- Vite precisa de `base: '/cerrado-calc/'` (nome do repo) para os assets resolverem em `https://<usuario>.github.io/cerrado-calc/`.
+- Consequência do localStorage: os dados ficam salvos por navegador/dispositivo — não sincronizam entre aparelhos. Aceitável para uso pessoal.
 
 ## Critérios de sucesso
 - Ao informar carteira + aporte, o app mostra exatamente quanto pôr em cada ativo, priorizando os atrasados, e nunca sugere venda.
