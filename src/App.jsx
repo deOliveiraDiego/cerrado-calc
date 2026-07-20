@@ -2,13 +2,11 @@ import { DollarSign, TrendingUp, Bitcoin, Shield } from 'lucide-react';
 import { ASSETS } from './assets.js';
 import { computeDistribution } from './lib/distribution.js';
 import { usePersistentState } from './hooks/usePersistentState.js';
+import { brl, pct, parseNumber } from './lib/format.js';
 
 const ICONS = { shield: Shield, trending: TrendingUp, bitcoin: Bitcoin };
 
-const brl = (v) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0);
-const pct = (f) => `${(f * 100).toFixed(1)}%`;
-const num = (e) => Number(String(e.target.value).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+const num = (e) => parseNumber(e.target.value);
 
 const initialHoldings = Object.fromEntries(ASSETS.map((a) => [a.name, 0]));
 const initialTargets = Object.fromEntries(ASSETS.map((a) => [a.name, a.defaultTarget]));
