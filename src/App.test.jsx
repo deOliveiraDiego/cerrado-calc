@@ -1,8 +1,30 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App.jsx';
 
-beforeEach(() => window.localStorage.clear());
+const { fx } = vi.hoisted(() => ({ fx: { current: null } }));
+vi.mock('./hooks/useExchangeRate.js', () => ({
+  useExchangeRate: () => fx.current,
+}));
+
+function setFx(partial) {
+  fx.current = {
+    rate: 5,
+    source: 'api',
+    updatedAt: 1,
+    loading: false,
+    error: false,
+    manualRate: '',
+    setManualRate: vi.fn(),
+    refresh: vi.fn(),
+    ...partial,
+  };
+}
+
+beforeEach(() => {
+  window.localStorage.clear();
+  setFx();
+});
 
 describe('App', () => {
   it('renderiza os quatro ativos', () => {
@@ -74,5 +96,48 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '1000' } });
     // carteira zerada + alvos somando 100% => total distribuído = R$ 1.000,00
     expect(screen.getByText(/Total a aportar:\s*R\$\s*1\.000,00/)).toBeInTheDocument();
+  });
+
+  it('converte o saldo do SPHQ de US$ para R$ no patrimônio', () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '0' } });
+    fireEvent.change(screen.getByLabelText('Quanto você tem SPHQ'), { target: { value: '100' } });
+    // 100 US$ × 5 = R$ 500,00
+    expect(screen.getByText(/Patrimônio atual:\s*R\$\s*500,00/)).toBeInTheDocument();
+  });
+
+  it('mostra o aporte do SPHQ em US$ e em R$', () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '1000' } });
+    // carteira zerada, alvo do SPHQ 19% → R$ 190,00 → US$ 38,00 (÷5)
+    expect(screen.getByText(/US\$\s*38,00/)).toBeInTheDocument();
+    expect(screen.getByText(/≈\s*R\$\s*190,00/)).toBeInTheDocument();
+  });
+
+  it('sem cotação, o SPHQ fica de fora e mostra "—"', () => {
+    setFx({ rate: null, source: null, error: true });
+    render(<App />);
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.getByText(/sem cotação do dólar/i)).toBeInTheDocument();
+    expect(screen.getByText(/não consegui buscar o dólar/i)).toBeInTheDocument();
+  });
+
+  it('a barra de cotação mostra o valor e a fonte', () => {
+    render(<App />);
+    expect(screen.getByText(/Dólar:/)).toBeInTheDocument();
+    expect(screen.getByText(/via AwesomeAPI/)).toBeInTheDocument();
+  });
+
+  it('sinaliza quando a cotação vem do cache', () => {
+    setFx({ source: 'cache' });
+    render(<App />);
+    expect(screen.getByText(/cotação em cache/i)).toBeInTheDocument();
+  });
+
+  it('permite editar a cotação manualmente', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('editar'));
+    fireEvent.change(screen.getByLabelText('Cotação do dólar'), { target: { value: '6,10' } });
+    expect(fx.current.setManualRate).toHaveBeenCalledWith('6,10');
   });
 });

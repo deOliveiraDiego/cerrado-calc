@@ -1,15 +1,16 @@
-import { DollarSign, TrendingUp, Bitcoin, Shield, RotateCcw, Eraser } from 'lucide-react';
+import { useState } from 'react';
+import { DollarSign, TrendingUp, Bitcoin, Shield, RotateCcw, Eraser, RefreshCw } from 'lucide-react';
 import { ASSETS } from './assets.js';
 import { computeDistribution } from './lib/distribution.js';
 import { usePersistentState, isLocalStorageAvailable } from './hooks/usePersistentState.js';
-import { brl, pct, parseNumber } from './lib/format.js';
+import { useExchangeRate } from './hooks/useExchangeRate.js';
+import { money, pct, parseNumber } from './lib/format.js';
 
 const ICONS = { shield: Shield, trending: TrendingUp, bitcoin: Bitcoin };
 const STATUS_LABEL = { acima: 'acima', abaixo: 'abaixo', ok: 'no alvo' };
+const SOURCE_LABEL = { manual: 'cotação manual', api: 'via AwesomeAPI', cache: 'cotação em cache' };
 
-// Mantém no estado o texto que o usuário digitou (só removendo caracteres
-// inválidos), para não engolir a vírgula/ponto enquanto ele digita centavos.
-// A conversão para número acontece só na hora do cálculo, via parseNumber.
+// Mantém o texto digitado (só filtra caracteres inválidos); converte só no cálculo.
 const cleanNum = (v) => String(v).replace(/[^\d.,]/g, '');
 
 const initialHoldings = Object.fromEntries(ASSETS.map((a) => [a.name, 0]));
@@ -20,15 +21,30 @@ export default function App() {
   const [holdings, setHoldings] = usePersistentState('cerrado.holdings', initialHoldings);
   const [targets, setTargets] = usePersistentState('cerrado.targets', initialTargets);
   const [aporte, setAporte] = usePersistentState('cerrado.aporte', 3000);
+  const { rate, source, loading, error, manualRate, setManualRate, refresh } = useExchangeRate();
+  const [editandoCotacao, setEditandoCotacao] = useState(false);
 
-  const holdingsNum = Object.fromEntries(ASSETS.map((a) => [a.name, parseNumber(holdings[a.name])]));
-  const targetsNum = Object.fromEntries(ASSETS.map((a) => [a.name, parseNumber(targets[a.name])]));
   const aporteNum = parseNumber(aporte);
+  const temCotacao = rate != null && rate > 0;
 
-  const rows = computeDistribution(holdingsNum, targetsNum, aporteNum);
+  // BRL sempre entra; USD só quando há cotação.
+  const ativosCalculo = ASSETS.filter((a) => a.currency === 'BRL' || temCotacao);
+  const holdingsBRL = {};
+  const targetsCalculo = {};
+  for (const a of ativosCalculo) {
+    const nativo = parseNumber(holdings[a.name]);
+    holdingsBRL[a.name] = a.currency === 'USD' ? nativo * rate : nativo;
+    targetsCalculo[a.name] = parseNumber(targets[a.name]);
+  }
+  const rows = computeDistribution(holdingsBRL, targetsCalculo, aporteNum);
   const byName = Object.fromEntries(rows.map((r) => [r.name, r]));
+
   const somaAlvos = ASSETS.reduce((a, x) => a + parseNumber(targets[x.name]), 0);
-  const totalAtual = ASSETS.reduce((a, x) => a + parseNumber(holdings[x.name]), 0);
+  const totalAtual = ASSETS.reduce((a, x) => {
+    const nativo = parseNumber(holdings[x.name]);
+    if (x.currency === 'USD') return a + (temCotacao ? nativo * rate : 0);
+    return a + nativo;
+  }, 0);
   const totalAportar = rows.reduce((a, r) => a + r.aportar, 0);
 
   return (
@@ -43,6 +59,49 @@ export default function App() {
           {!storageOk && (
             <div className="mb-6 text-center text-sm text-amber-700 bg-amber-100 rounded-xl py-2 px-4">
               Não foi possível acessar o armazenamento do navegador — seus valores não serão salvos entre visitas.
+            </div>
+          )}
+
+          <div className="max-w-md mx-auto mb-6 text-center text-sm">
+            <div className="inline-flex flex-wrap items-center justify-center gap-2 bg-gray-100 rounded-xl py-2 px-4 text-gray-700">
+              {temCotacao ? (
+                <span>Dólar: <strong>{money(rate, 'BRL')}</strong> · {SOURCE_LABEL[source]}</span>
+              ) : (
+                <span className="text-amber-700">Informe a cotação do dólar para calcular o SPHQ.</span>
+              )}
+              {loading && <span className="text-gray-400">atualizando…</span>}
+              <button type="button" aria-label="Atualizar cotação" onClick={refresh} className="text-gray-500 hover:text-gray-700">
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <button type="button" onClick={() => setEditandoCotacao((v) => !v)} className="text-purple-700 underline">
+                editar
+              </button>
+            </div>
+            {editandoCotacao && (
+              <div className="mt-2 flex items-center justify-center gap-3">
+                <label className="text-gray-600">
+                  Cotação (R$)
+                  <input
+                    aria-label="Cotação do dólar"
+                    type="text"
+                    inputMode="decimal"
+                    value={manualRate}
+                    onChange={(e) => setManualRate(cleanNum(e.target.value))}
+                    className="ml-2 w-28 px-2 py-1 border rounded-lg"
+                  />
+                </label>
+                {manualRate !== '' && (
+                  <button type="button" onClick={() => setManualRate('')} className="text-purple-700 underline">
+                    voltar ao automático
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {error && !temCotacao && (
+            <div className="mb-6 text-center text-sm text-amber-700 bg-amber-100 rounded-xl py-2 px-4">
+              Não consegui buscar o dólar. Clique em “editar” e digite a cotação para calcular o SPHQ.
             </div>
           )}
 
@@ -62,7 +121,7 @@ export default function App() {
                 className="w-full pl-12 pr-4 py-4 text-2xl font-bold text-center border-2 border-purple-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-400"
               />
             </div>
-            <div className="mt-2 text-center text-gray-600 font-semibold">{brl(aporteNum)}</div>
+            <div className="mt-2 text-center text-gray-600 font-semibold">{money(aporteNum, 'BRL')}</div>
           </div>
 
           <div className="flex flex-wrap justify-center gap-3 mb-6">
@@ -92,8 +151,16 @@ export default function App() {
             {ASSETS.map((asset) => {
               const Icon = ICONS[asset.icon];
               const r = byName[asset.name];
-              const statusColor = r.status === 'acima' ? 'text-red-600' : r.status === 'abaixo' ? 'text-emerald-600' : 'text-gray-500';
-              const zeroPorAcima = r.aportar === 0 && r.status === 'acima';
+              const isUSD = asset.currency === 'USD';
+              const holdingLabel = isUSD ? 'Quanto você tem (US$)' : 'Quanto você tem (R$)';
+              const statusColor = r
+                ? r.status === 'acima'
+                  ? 'text-red-600'
+                  : r.status === 'abaixo'
+                  ? 'text-emerald-600'
+                  : 'text-gray-500'
+                : 'text-gray-400';
+              const zeroPorAcima = r && r.aportar === 0 && r.status === 'acima';
               return (
                 <div key={asset.name} className="bg-white rounded-2xl p-6 shadow-lg border-l-4" style={{ borderLeftColor: asset.color }}>
                   <div className="flex items-center gap-3 mb-4">
@@ -108,7 +175,7 @@ export default function App() {
 
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <label className="text-sm text-gray-600">
-                      Quanto você tem (R$)
+                      {holdingLabel}
                       <input
                         aria-label={`Quanto você tem ${asset.name}`}
                         type="text"
@@ -133,15 +200,39 @@ export default function App() {
 
                   <div className="pt-3 border-t border-gray-100">
                     <div className="text-sm text-gray-500">Aportar agora</div>
-                    <div
-                      className="text-2xl font-bold"
-                      style={{ color: asset.color }}
-                      title={zeroPorAcima ? 'Já está acima do alvo — não recebe aporte (buy and hold: nunca vende).' : undefined}
-                    >
-                      {brl(r.aportar)}
-                    </div>
+                    {r ? (
+                      isUSD ? (
+                        <>
+                          <div
+                            className="text-2xl font-bold"
+                            style={{ color: asset.color }}
+                            title={zeroPorAcima ? 'Já está acima do alvo — não recebe aporte (buy and hold: nunca vende).' : undefined}
+                          >
+                            {money(r.aportar / rate, 'USD')}
+                          </div>
+                          <div className="text-xs text-gray-500">≈ {money(r.aportar, 'BRL')}</div>
+                        </>
+                      ) : (
+                        <div
+                          className="text-2xl font-bold"
+                          style={{ color: asset.color }}
+                          title={zeroPorAcima ? 'Já está acima do alvo — não recebe aporte (buy and hold: nunca vende).' : undefined}
+                        >
+                          {money(r.aportar, 'BRL')}
+                        </div>
+                      )
+                    ) : (
+                      <div className="text-2xl font-bold text-gray-300">—</div>
+                    )}
                     <div className="text-xs text-gray-500 mt-1">
-                      {pct(r.pctAntes)} → {pct(r.pctDepois)} · alvo {pct(r.alvo)} <span className={statusColor}>({STATUS_LABEL[r.status]})</span>
+                      {r ? (
+                        <>
+                          {pct(r.pctAntes)} → {pct(r.pctDepois)} · alvo {pct(r.alvo)}{' '}
+                          <span className={statusColor}>({STATUS_LABEL[r.status]})</span>
+                        </>
+                      ) : (
+                        <span className="text-amber-600">sem cotação do dólar</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -150,9 +241,9 @@ export default function App() {
           </div>
 
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 flex flex-col sm:flex-row justify-between gap-2 text-gray-700 font-semibold">
-            <span>Patrimônio atual: {brl(totalAtual)}</span>
-            <span>Total a aportar: {brl(totalAportar)}</span>
-            <span>Após aporte: {brl(totalAtual + aporteNum)}</span>
+            <span>Patrimônio atual: {money(totalAtual, 'BRL')}</span>
+            <span>Total a aportar: {money(totalAportar, 'BRL')}</span>
+            <span>Após aporte: {money(totalAtual + aporteNum, 'BRL')}</span>
           </div>
         </div>
       </div>
