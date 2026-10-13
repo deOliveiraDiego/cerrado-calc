@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DollarSign, TrendingUp, Bitcoin, Shield, RotateCcw, Eraser, RefreshCw } from 'lucide-react';
 import { ASSETS } from './assets.js';
 import { computeDistribution } from './lib/distribution.js';
+import { splitAporte, AMORTIZACAO_MINIMA } from './lib/amortization.js';
 import { usePersistentState, isLocalStorageAvailable } from './hooks/usePersistentState.js';
 import { useExchangeRate } from './hooks/useExchangeRate.js';
 import { money, pct, parseNumber, amount, maskCents } from './lib/format.js';
@@ -21,10 +22,12 @@ export default function App() {
   const [holdings, setHoldings] = usePersistentState('cerrado.holdings', initialHoldings);
   const [targets, setTargets] = usePersistentState('cerrado.targets', initialTargets);
   const [aporte, setAporte] = usePersistentState('cerrado.aporte', 3000);
+  const [amortPct, setAmortPct] = usePersistentState('cerrado.amortizacaoPct', '20');
   const { rate, source, loading, error, manualRate, setManualRate, refresh } = useExchangeRate();
   const [editandoCotacao, setEditandoCotacao] = useState(false);
 
   const aporteNum = parseNumber(aporte);
+  const { amortizacao, carteira, abaixoMinimo } = splitAporte(aporteNum, parseNumber(amortPct));
   const temCotacao = rate != null && rate > 0;
 
   // BRL sempre entra; USD só quando há cotação.
@@ -36,7 +39,7 @@ export default function App() {
     holdingsBRL[a.name] = a.currency === 'USD' ? nativo * rate : nativo;
     targetsCalculo[a.name] = parseNumber(targets[a.name]);
   }
-  const rows = computeDistribution(holdingsBRL, targetsCalculo, aporteNum);
+  const rows = computeDistribution(holdingsBRL, targetsCalculo, carteira);
   const byName = Object.fromEntries(rows.map((r) => [r.name, r]));
 
   const somaAlvos = ASSETS.reduce((a, x) => a + parseNumber(targets[x.name]), 0);
@@ -122,6 +125,28 @@ export default function App() {
               />
             </div>
             <div className="mt-2 text-center text-gray-600 font-semibold">{money(aporteNum, 'BRL')}</div>
+
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600">
+              <label htmlFor="amortizacao-pct">Amortização (% do aporte)</label>
+              <input
+                id="amortizacao-pct"
+                aria-label="Amortização (% do aporte)"
+                type="text"
+                inputMode="decimal"
+                value={amortPct}
+                onChange={(e) => setAmortPct(cleanNum(e.target.value))}
+                className="w-16 px-2 py-1 border rounded-lg text-center"
+              />
+            </div>
+            <div className="mt-3 bg-slate-50 rounded-xl py-3 px-4 text-sm text-gray-700 space-y-1">
+              <div className="flex justify-between">
+                <span>Amortização: {money(amortizacao, 'BRL')}</span>
+                {abaixoMinimo && (
+                  <span className="text-amber-700">abaixo do mínimo de R$ {AMORTIZACAO_MINIMA} do Itaú</span>
+                )}
+              </div>
+              <div className="font-semibold">Vai para a carteira: {money(carteira, 'BRL')}</div>
+            </div>
           </div>
 
           <div className="flex flex-wrap justify-center gap-3 mb-6">
@@ -243,7 +268,7 @@ export default function App() {
           <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl p-6 flex flex-col sm:flex-row justify-between gap-2 text-gray-700 font-semibold">
             <span>Patrimônio atual: {money(totalAtual, 'BRL')}</span>
             <span>Total a aportar: {money(totalAportar, 'BRL')}</span>
-            <span>Após aporte: {money(totalAtual + aporteNum, 'BRL')}</span>
+            <span>Após aporte: {money(totalAtual + carteira, 'BRL')}</span>
           </div>
         </div>
       </div>

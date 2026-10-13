@@ -90,6 +90,7 @@ describe('App', () => {
 
   it('mostra o total a aportar igual ao aporte', () => {
     render(<App />);
+    fireEvent.change(screen.getByLabelText('Amortização (% do aporte)'), { target: { value: '0' } });
     fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '100000' } });
     // carteira zerada + alvos somando 100% => total distribuído = R$ 1.000,00
     expect(screen.getByText(/Total a aportar:\s*R\$\s*1\.000,00/)).toBeInTheDocument();
@@ -105,6 +106,7 @@ describe('App', () => {
 
   it('mostra o aporte do SPHQ em US$ e em R$', () => {
     render(<App />);
+    fireEvent.change(screen.getByLabelText('Amortização (% do aporte)'), { target: { value: '0' } });
     fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '100000' } });
     // carteira zerada, alvo do SPHQ 19% → R$ 190,00 → US$ 38,00 (÷5)
     expect(screen.getByText(/US\$\s*38,00/)).toBeInTheDocument();
@@ -136,5 +138,22 @@ describe('App', () => {
     fireEvent.click(screen.getByText('editar'));
     fireEvent.change(screen.getByLabelText('Cotação do dólar'), { target: { value: '6,10' } });
     expect(fx.current.setManualRate).toHaveBeenCalledWith('6,10');
+  });
+
+  it('separa a amortização do aporte e distribui só o resto', () => {
+    render(<App />);
+    expect(screen.getByLabelText('Amortização (% do aporte)')).toHaveValue('20');
+    fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '300000' } });
+    expect(screen.getByText(/Amortização:\s*R\$\s*600,00/)).toBeInTheDocument();
+    expect(screen.getByText(/Vai para a carteira:\s*R\$\s*2\.400,00/)).toBeInTheDocument();
+    expect(screen.getByText(/Total a aportar:\s*R\$\s*2\.400,00/)).toBeInTheDocument();
+  });
+
+  it('avisa quando a amortização fica abaixo do mínimo do Itaú', () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '40000' } });
+    expect(screen.getByText(/Amortização:\s*R\$\s*0,00/)).toBeInTheDocument();
+    expect(screen.getByText(/abaixo do mínimo de R\$ 100 do Itaú/)).toBeInTheDocument();
+    expect(screen.getByText(/Vai para a carteira:\s*R\$\s*400,00/)).toBeInTheDocument();
   });
 });
