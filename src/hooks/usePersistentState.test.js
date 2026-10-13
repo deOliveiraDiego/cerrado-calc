@@ -25,4 +25,9 @@ describe('usePersistentState', () => {
     const { result } = renderHook(() => usePersistentState('k', 0));
     expect(result.current[0]).toBe(42);
   });
+  it('objeto salvo ganha as chaves novas do valor inicial', () => {
+    window.localStorage.setItem('k', JSON.stringify({ a: 9 }));
+    const { result } = renderHook(() => usePersistentState('k', { a: 1, b: 2 }));
+    expect(result.current[0]).toEqual({ a: 9, b: 2 });
+  });
 });

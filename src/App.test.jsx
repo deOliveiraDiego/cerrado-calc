@@ -29,11 +29,40 @@ beforeEach(() => {
 });
 
 describe('App', () => {
-  it('renderiza os quatro ativos', () => {
+  it('renderiza os cinco ativos', () => {
     render(<App />);
     expect(screen.getByText('AUPO11')).toBeInTheDocument();
+    expect(screen.getByText('QQQ')).toBeInTheDocument();
     expect(screen.getByText('Bitcoin')).toBeInTheDocument();
-    expect(screen.getAllByText(/Aportar agora/).length).toBe(4);
+    expect(screen.getAllByText(/Aportar agora/).length).toBe(5);
+  });
+
+  it('divide o alvo internacional em QQQ 13,3% e SPHQ 5,7%', () => {
+    render(<App />);
+    expect(screen.getByLabelText('Alvo QQQ')).toHaveValue('13,3');
+    expect(screen.getByLabelText('Alvo SPHQ')).toHaveValue('5,7');
+    expect(screen.queryByText(/soma dos alvos/i)).not.toBeInTheDocument();
+  });
+
+  it('mostra o aporte do QQQ em US$ e em R$', () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '100000' } });
+    // carteira zerada, alvo do QQQ 13,3% → R$ 133,00 → US$ 26,60 (÷5)
+    expect(screen.getByText(/US\$\s*26,60/)).toBeInTheDocument();
+    expect(screen.getByText(/≈\s*R\$\s*133,00/)).toBeInTheDocument();
+  });
+
+  it('carteira salva antes do QQQ: mantém os valores e mostra o QQQ zerado', () => {
+    window.localStorage.setItem('cerrado.holdings', JSON.stringify({ AUPO11: 0, AUVP11: 0, SPHQ: '96,75', Bitcoin: 0 }));
+    window.localStorage.setItem('cerrado.targets', JSON.stringify({ AUPO11: 28, AUVP11: 39, SPHQ: 19, Bitcoin: 14 }));
+    render(<App />);
+    expect(screen.getByLabelText('Quanto você tem SPHQ')).toHaveValue('96,75');
+    expect(screen.getByLabelText('Quanto você tem QQQ')).toHaveValue('0,00');
+    expect(screen.getByLabelText('Alvo SPHQ')).toHaveValue('19');
+    expect(screen.getByLabelText('Alvo QQQ')).toHaveValue('13,3');
+    fireEvent.change(screen.getByLabelText('Quanto você tem QQQ'), { target: { value: '134524' } });
+    expect(screen.getByLabelText('Quanto você tem QQQ')).toHaveValue('1.345,24');
+    expect(screen.getByLabelText('Quanto você tem SPHQ')).toHaveValue('96,75');
   });
 
   it('não aporta em ativo muito acima do alvo', () => {
@@ -108,16 +137,16 @@ describe('App', () => {
   it('mostra o aporte do SPHQ em US$ e em R$', () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '100000' } });
-    // carteira zerada, alvo do SPHQ 19% → R$ 190,00 → US$ 38,00 (÷5)
-    expect(screen.getByText(/US\$\s*38,00/)).toBeInTheDocument();
-    expect(screen.getByText(/≈\s*R\$\s*190,00/)).toBeInTheDocument();
+    // carteira zerada, alvo do SPHQ 5,7% → R$ 57,00 → US$ 11,40 (÷5)
+    expect(screen.getByText(/US\$\s*11,40/)).toBeInTheDocument();
+    expect(screen.getByText(/≈\s*R\$\s*57,00/)).toBeInTheDocument();
   });
 
-  it('sem cotação, o SPHQ fica de fora e mostra "—"', () => {
+  it('sem cotação, QQQ e SPHQ ficam de fora e mostram "—"', () => {
     setFx({ rate: null, source: null, error: true });
     render(<App />);
-    expect(screen.getByText('—')).toBeInTheDocument();
-    expect(screen.getByText(/sem cotação do dólar/i)).toBeInTheDocument();
+    expect(screen.getAllByText('—')).toHaveLength(2);
+    expect(screen.getAllByText(/sem cotação do dólar/i)).toHaveLength(2);
     expect(screen.getByText(/não consegui buscar o dólar/i)).toBeInTheDocument();
   });
 

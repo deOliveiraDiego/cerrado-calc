@@ -16,7 +16,8 @@ const cleanNum = (v) => String(v).replace(/[^\d.,]/g, '');
 const clampPct = (v) => { const s = cleanNum(v); return parseNumber(s) > 100 ? '100' : s; };
 
 const initialHoldings = Object.fromEntries(ASSETS.map((a) => [a.name, 0]));
-const initialTargets = Object.fromEntries(ASSETS.map((a) => [a.name, a.defaultTarget]));
+// Alvo vira texto pt-BR (13.3 → '13,3'): o campo é lido com parseNumber.
+const initialTargets = Object.fromEntries(ASSETS.map((a) => [a.name, String(a.defaultTarget).replace('.', ',')]));
 const storageOk = isLocalStorageAvailable();
 
 export default function App() {
@@ -71,7 +72,7 @@ export default function App() {
               {temCotacao ? (
                 <span>Dólar: <strong>{money(rate, 'BRL')}</strong> · {SOURCE_LABEL[source]}</span>
               ) : (
-                <span className="text-amber-700">Informe a cotação do dólar para calcular o SPHQ.</span>
+                <span className="text-amber-700">Informe a cotação do dólar para calcular QQQ e SPHQ.</span>
               )}
               {loading && <span className="text-gray-400">atualizando…</span>}
               <button type="button" aria-label="Atualizar cotação" onClick={refresh} className="text-gray-500 hover:text-gray-700">
@@ -105,7 +106,7 @@ export default function App() {
 
           {error && !temCotacao && (
             <div className="mb-6 text-center text-sm text-amber-700 bg-amber-100 rounded-xl py-2 px-4">
-              Não consegui buscar o dólar. Clique em “editar” e digite a cotação para calcular o SPHQ.
+              Não consegui buscar o dólar. Clique em “editar” e digite a cotação para calcular QQQ e SPHQ.
             </div>
           )}
 
