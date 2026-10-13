@@ -130,7 +130,6 @@ export default function App() {
               <label htmlFor="amortizacao-pct">Amortização (% do aporte)</label>
               <input
                 id="amortizacao-pct"
-                aria-label="Amortização (% do aporte)"
                 type="text"
                 inputMode="decimal"
                 value={amortPct}
@@ -142,7 +141,7 @@ export default function App() {
               <div className="flex justify-between">
                 <span>Amortização: {money(amortizacao, 'BRL')}</span>
                 {abaixoMinimo && (
-                  <span className="text-amber-700">abaixo do mínimo de R$ {AMORTIZACAO_MINIMA} do Itaú</span>
+                  <span className="text-amber-700">abaixo do mínimo de {money(AMORTIZACAO_MINIMA, 'BRL')} do Itaú</span>
                 )}
               </div>
               <div className="font-semibold">Vai para a carteira: {money(carteira, 'BRL')}</div>
