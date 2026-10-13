@@ -266,7 +266,8 @@ export default function App() {
 
           <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl p-6 flex flex-col sm:flex-row justify-between gap-2 text-gray-700 font-semibold">
             <span>Patrimônio atual: {money(totalAtual, 'BRL')}</span>
-            <span>Total a aportar: {money(totalAportar, 'BRL')}</span>
+            <span>Amortização: {money(amortizacao, 'BRL')}</span>
+            <span>Total na carteira: {money(totalAportar, 'BRL')}</span>
             <span>Após aporte: {money(totalAtual + carteira, 'BRL')}</span>
           </div>
         </div>

@@ -94,7 +94,7 @@ describe('App', () => {
     render(<App />);
     fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '100000' } });
     // carteira zerada + alvos somando 100% => total distribuído = R$ 1.000,00
-    expect(screen.getByText(/Total a aportar:\s*R\$\s*1\.000,00/)).toBeInTheDocument();
+    expect(screen.getByText(/Total na carteira:\s*R\$\s*1\.000,00/)).toBeInTheDocument();
   });
 
   it('converte o saldo do SPHQ de US$ para R$ no patrimônio', () => {
@@ -145,16 +145,16 @@ describe('App', () => {
     render(<App />);
     expect(screen.getByLabelText('Amortização (% do aporte)')).toHaveValue('20');
     fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '300000' } });
-    expect(screen.getByText(/Amortização:\s*R\$\s*600,00/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Amortização:\s*R\$\s*600,00/)).toHaveLength(2); // caixa + rodapé
     expect(screen.getByText(/Vai para a carteira:\s*R\$\s*2\.400,00/)).toBeInTheDocument();
-    expect(screen.getByText(/Total a aportar:\s*R\$\s*2\.400,00/)).toBeInTheDocument();
+    expect(screen.getByText(/Total na carteira:\s*R\$\s*2\.400,00/)).toBeInTheDocument();
   });
 
   it('avisa quando a amortização fica abaixo do mínimo do Itaú', () => {
     window.localStorage.removeItem('cerrado.amortizacaoPct');
     render(<App />);
     fireEvent.change(screen.getByLabelText('Aporte deste mês'), { target: { value: '40000' } });
-    expect(screen.getByText(/Amortização:\s*R\$\s*0,00/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Amortização:\s*R\$\s*0,00/)).toHaveLength(2); // caixa + rodapé
     expect(screen.getByText(/abaixo do mínimo de R\$\s*100,00 do Itaú/)).toBeInTheDocument();
     expect(screen.getByText(/Vai para a carteira:\s*R\$\s*400,00/)).toBeInTheDocument();
   });
