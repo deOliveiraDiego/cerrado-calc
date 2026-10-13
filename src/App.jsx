@@ -13,6 +13,7 @@ const SOURCE_LABEL = { manual: 'cotação manual', api: 'via AwesomeAPI', cache:
 
 // Mantém o texto digitado (só filtra caracteres inválidos); converte só no cálculo.
 const cleanNum = (v) => String(v).replace(/[^\d.,]/g, '');
+const clampPct = (v) => { const s = cleanNum(v); return parseNumber(s) > 100 ? '100' : s; };
 
 const initialHoldings = Object.fromEntries(ASSETS.map((a) => [a.name, 0]));
 const initialTargets = Object.fromEntries(ASSETS.map((a) => [a.name, a.defaultTarget]));
@@ -133,7 +134,7 @@ export default function App() {
                 type="text"
                 inputMode="decimal"
                 value={amortPct}
-                onChange={(e) => setAmortPct(cleanNum(e.target.value))}
+                onChange={(e) => setAmortPct(clampPct(e.target.value))}
                 className="w-16 px-2 py-1 border rounded-lg text-center"
               />
             </div>
