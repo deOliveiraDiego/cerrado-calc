@@ -139,12 +139,13 @@ export default function App() {
               />
             </div>
             <div className="mt-3 bg-slate-50 rounded-xl py-3 px-4 text-sm text-gray-700 space-y-1">
-              <div className="flex justify-between">
-                <span>Amortização: {money(amortizacao, 'BRL')}</span>
-                {abaixoMinimo && (
-                  <span className="text-amber-700">abaixo do mínimo de {money(AMORTIZACAO_MINIMA, 'BRL')} do Itaú</span>
-                )}
-              </div>
+              <div>Amortização: {money(amortizacao, 'BRL')}</div>
+              {amortizacao > 0 && (
+                <div className="text-xs text-gray-500">Pague pelo app Itaú → Crédito Imobiliário → Amortização</div>
+              )}
+              {abaixoMinimo && (
+                <div className="text-amber-700">abaixo do mínimo de {money(AMORTIZACAO_MINIMA, 'BRL')} do Itaú</div>
+              )}
               <div className="font-semibold">Vai para a carteira: {money(carteira, 'BRL')}</div>
             </div>
           </div>
