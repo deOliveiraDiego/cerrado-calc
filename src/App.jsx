@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DollarSign, TrendingUp, Bitcoin, Shield, RotateCcw, Eraser, RefreshCw } from 'lucide-react';
 import { ASSETS } from './assets.js';
 import { computeDistribution } from './lib/distribution.js';
@@ -6,6 +6,7 @@ import { splitAporte, AMORTIZACAO_MINIMA } from './lib/amortization.js';
 import { usePersistentState, isLocalStorageAvailable } from './hooks/usePersistentState.js';
 import { useExchangeRate } from './hooks/useExchangeRate.js';
 import { money, pct, parseNumber, amount, maskCents } from './lib/format.js';
+import { parseHoldingsHash } from './lib/hashHoldings.js';
 
 const ICONS = { shield: Shield, trending: TrendingUp, bitcoin: Bitcoin };
 const STATUS_LABEL = { acima: 'acima', abaixo: 'abaixo', ok: 'no alvo' };
@@ -27,6 +28,15 @@ export default function App() {
   const [amortPct, setAmortPct] = usePersistentState('cerrado.amortizacaoPct', '20');
   const { rate, source, loading, error, manualRate, setManualRate, refresh } = useExchangeRate();
   const [editandoCotacao, setEditandoCotacao] = useState(false);
+
+  // Saldos vindos no link (#AUPO11=...&Bitcoin=...): preenche os cards e
+  // apaga o hash para os valores não ficarem no histórico do navegador.
+  useEffect(() => {
+    const fromHash = parseHoldingsHash(window.location.hash, ASSETS.map((a) => a.name));
+    if (!fromHash) return;
+    setHoldings((prev) => ({ ...prev, ...fromHash }));
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }, []);
 
   const aporteNum = parseNumber(aporte);
   const { amortizacao, carteira, abaixoMinimo } = splitAporte(aporteNum, parseNumber(amortPct));
